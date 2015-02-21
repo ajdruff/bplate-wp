@@ -1,5 +1,5 @@
 /public_html/php_errors.log
 /public_html/wp-content/plugins/apergy-sandbox
 *.log
-# _live
-# _stage
+_live
+_stage
