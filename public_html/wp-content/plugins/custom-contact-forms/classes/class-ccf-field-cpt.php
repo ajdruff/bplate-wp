@@ -27,13 +27,14 @@ class CCF_Field_CPT {
 	public function setup_cpt() {
 
 		$args = array(
-			'labels' => false,
+			'label' => esc_html__( 'Form Fields', 'custom-contact-forms' ),
 			'public' => false,
 			'query_var' => false,
 			'rewrite' => false,
 			'capability_type' => 'post',
 			'hierarchical' => false,
 			'supports' => false,
+			'has_archive' => false,
 		);
 
 		register_post_type( 'ccf_field', $args );

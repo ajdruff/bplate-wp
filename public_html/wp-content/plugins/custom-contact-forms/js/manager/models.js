@@ -18,6 +18,17 @@
 	};
 
 	/**
+	 * Many web servers don't support PUT
+	 */
+	var _sync = function( method, model, options ) {
+		options = options || {};
+
+		options.emulateHTTP = true;
+
+		return this.constructor.__super__.sync.call( this, method, model, options );
+	};
+
+	/**
 	 * We decode HTML entities after syncing then escape on output. The
 	 * point of this is to prevent double escaping.
 	 */
@@ -35,6 +46,7 @@
 						.replace( /&#8220;/g, '”' )
 						.replace( /&#8221;/g, '”' )
 						.replace( /&#8216;/g, "‘" )
+						.replace( /&#038;/g, "&" )
 						.replace( /&#039;/g, "'" );
 
 					this.set( key, value );
@@ -68,6 +80,8 @@
 
 			set: _modelSet,
 
+			sync: _sync,
+
 			initialize: function() {
 				this.on( 'sync', this.decode, this );
 			},
@@ -86,7 +100,12 @@
 					emailNotificationAddresses: ccfSettings.adminEmail,
 					emailNotificationFromType: 'default',
 					emailNotificationFromAddress: '',
-					emailNotificationFromField: ''
+					emailNotificationFromField: '',
+					emailNotificationFromNameType: 'custom',
+					emailNotificationFromName: 'WordPress',
+					emailNotificationFromNameField: '',
+					pause: false,
+					pauseMessage: ccfSettings.pauseMessage
 				};
 
 				defaults = _.defaults( defaults, this.constructor.__super__.defaults );
@@ -194,7 +213,9 @@
 			defaults: {
 				ID: null,
 				data: {}
-			}
+			},
+
+			sync: _sync
 		}
 	);
 
@@ -227,7 +248,9 @@
 				});
 
 				return reqsMet;
-			}
+			},
+
+			sync: _sync
 		}
 	);
 
@@ -237,7 +260,7 @@
 
 			defaults: function() {
 				var defaults = {
-					label: 'Field Label',
+					label: ccfSettings.fieldLabel,
 					value: '',
 					placeholder: '',
 					slug: '',

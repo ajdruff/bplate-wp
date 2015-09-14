@@ -1,20 +1,25 @@
-=== Stop Spammers ===
+=== Stop Spammers Spam Prevention ===
 Tags: spam, comment, registration, login
-Requires at least: 3.0
-Tested up to: 4.2-alpha
+Tags: akismet, all-in-one, antispam, anti-spam, block spam, captcha, comment, comment spam, comments, contact, contact form, contact forms, form, forms, javascript, login, multisite, protection, register, registration, registration spam, security, signup, signup spam, spam, spam blocker, spam filter, trackback, trackbacks, user registration spam, widget, spam, spam, spam, spam, spam, lovely spam, wonderful spam, lovely spam, wonderful spam
+Tested up to: 4.2
 Contributors: Keith Graham
-Stable tag: 6.05
+Stable tag: trunk
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
-The Stop Spammers Plugin blocks spammers from leaving comments or logging in.
+Aggressive anti-spam plugin that eliminates comment spam, trackback spam, contact form spam and registration spam. Protects against malicious attacks.
 
 == Description == 
-Stop Spammers is an aggressive website defence against comment spam and login attempts. It is capable of performing more than 20 different checks for malicious events and can block spammers from over 100 different countries. 
-Much of the code in this plugin is dedicated to allowing good users access to comments with many "allow" features to prevent having false positives when checking spam.
+Stop Spammers is an aggressive website spam defence against comment spam and login attempts. It is capable of performing more than 20 different checks for spam and malicious events and can block spam from over 100 different countries. 
+
 There are 12 pages of options that can be used to configure the plugin to your needs.
+
 In cases where spam is detected, users are offered a second chance to post their comments or login. Denied requests are presented with a captcha screen in order to prevent users from being blocked. The captcha can be configures as OpenCaptcha, Google reCaptcha, or SolveMedia Captcha. The Captcha will only appear when a user is denied access as a spammer.
+
 The plugin is designed to work with other plugins like Gravity Forms. It looks at any FORM POST such as BBPress or other addons that use access controls. THe plugin implements a fuzzy search for email and user ids in order to check for spam.
+
+There are free add-ons available that check some special cases.
+
 The Stop Spammers Plugin has been under development since 2010.
 
  
@@ -29,9 +34,63 @@ THEN
 
 == Changelog ==
 
+= 6.12 =
+* Removed a pregreplace backdoor signature from threat scan. Securi thinks that my search for the string is the actual string, so it reported the plugin as malware. I will release immediately.
+
+= 6.11 =
+* Fix Akismet conflict with white list. Akismet positives should be checked against the white list before reporting.
+* Fixed another bug in Threat Scan where the file open failed trying to read a file with bad permissions.
+* Added additional checks to threat scan based on an articles at: https://blog.sucuri.net
+* Added a more complex exclude list to threat scan.
+* Fixed OpenCaptcha so that it can display the HTTP image on HTTPS sites without a warning. Catchas require the host to enable curl libraries.
+* This plugin and WP Jetpack plugin Login Protection clash. You get a blank screen if you use both. The plugin disables itself if JetPack Login Protection is installed.
+* Rebuilt all spammer by country modules. Deleted Africa. Now African countries are reported by lacnic.net, so my programs to extract CIDRS from Stop Forum Spam lists works for Africa now. New Countries added. This fixed a bug where I spelled Africa wrong.
+* Admin checks at login are for any user containing the word 'admin' anywhere in login id. Changed from lower case "admin" only. 
+* I now show failed password because I think it is important to see the dictionary attacks with many passwords. I may make an option for this in case some admins suffer from "fat fingers" and mistype their passwords frequently.
+* Fixed an error in options. The "Check credentials on all login attempts" and "Deny login attempts using 'admin' userid" were switched. The first one checks to the credentials of all login attempts. The second denies users who try to login with ids with the string 'admin', but the id doesn't exist.
+* Fixed range check in invalid IP check. Was returning false positives.
+* Conflict with eMember plugin. Stop Spammers disables itself (for login checks) if eMember is installed.
+
+
+= 6.10 =
+* Fixed bug in check multi hits option.
+* Fixed problem with server_addr variable in checking of allow lists.
+* Johan Schiff sent me some nice improvements to the TLD check which I included. It supports complex sub-domains now in addition to simple TLDs.
+* Another fix to threat scan trying to follow symbolic links.
+* Fixed captcha processing on sites that cannot use URL open functions.
+* Checks for WP eMember login in order to prevent conflict on logins. 
+
+= 6.09 =
+* IIs 7 and IIs 6 and some hosts fixes for SERVER_ADDR not found
+* Fix for Manage Plugin Options to prevent transient checks. (I may restore the transient checks in a future version.)
+* Add WorldPay to misc allow list.
+* Updated Country spam list and Generated Allow List.
+* Fixed bug in finding values in POST. Sometimes returned an array.
+* Removed Stripe from Donation page. 
+* TLD now looks at all post fields. If author, url, subject or comment ends in dot-tld it is denied. Woo forms sometimes confuses what is the email, so this will test more things for email. It is better though to try *@*.xxx in the deny list, than trying to use TLDs when a plugin uses non standard form field names.
+
+= 6.08 =
+* Responded to complaints about admin menu - now it is boring.
+* Fixed issue in Threat Scan for unexpected directories or symlinks that threw errors in opendir();
+* Added keyword SPAM to plugin name. It was not coming up in plugin searches.
+* Added a month's worth of Spammers from the Stop Forum Spam lists. Regenerated all countries spammer lists.
+* Fixed bug in IP wildcard checks.
+
+= 6.07 =
+* Fixed a bug in white listing
+* Fixed a bug in checking ip address
+* restored automatic cloudflare ip updating
+
+
+= 6.06 =
+* Fixed a mistake that caused the plugin to stop checking some post variables
+* Fixed bug in diagnostics when phpinfo is not allowed
+* added a function deny or allow userids. This is dangerous and not very useful, but can be done. A user requested the feature.
+* removed cloudflare warning message for now, since the plugin mirrors the CF plugin.
 
 = 6.05 =
 * Bad mistake in cloudflare module fixed. Breaks on IPv6 checks
+* Added Easter egg to summary screen to change the total count and date.
 
 = 6.04 =
 * Removed goto in cloudflare check. It was a wonderful dream that turned into a nightmare when it turns out 5.2 PHP doesn't support the goto statement. It was the first goto that I've coded in high level language in 25 years and I wanted it to work.
@@ -114,5 +173,4 @@ I am slowing down maintenance on this plugin. I don't have time to work on it. D
 == Support ==
 
 2/21/2015: I found that I cannot handle support other than try to fix problems when pointed out. If you are locked out of your website, delete the plugin and don't use it again. If you find it is too aggressive then start un-checking boxes in the configuration until it works. My sites are hosted on SiteGround.com. I pay for this service, and the plugin works perfectly. I can recommend www.SiteGround.com wholeheartedly. If you self-host or you are on a free or cheap hosting company that uses a proxy server or does not implement basic PHP functions then you cannot use this plugin.
-
 

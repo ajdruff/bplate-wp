@@ -287,7 +287,7 @@ class CCF_Form_Handler {
 
 		$format = get_post_meta( $field_id, esc_html__( 'ccf_field_phoneFormat', 'custom-contact-forms' ), true );
 
-		if ( ! empty( $value ) && preg_match( '#[^0-9+.)(\-]#', $value ) ) {
+		if ( ! empty( $value ) && preg_match( '#[^0-9+.)(\- ]#', $value ) ) {
 			$errors['chars'] = esc_html__( 'This phone number contains invalid characters.', 'custom-contact-forms' );
 		}
 
@@ -620,8 +620,8 @@ class CCF_Form_Handler {
 
 			$slug = get_post_meta( $field_id, 'ccf_field_slug', true );
 
-			// We will use this later when emailing a submission
-			$field_slug_to_id[$slug] = $field_id;
+			// We save this to reference later
+			$field_slug_to_id[$slug] = array( 'id' => $field_id, 'type' => sanitize_text_field( $type ) );
 
 			$custom_value_mapping = array( 'recaptcha' => 'g-recaptcha-response' );
 
@@ -660,13 +660,24 @@ class CCF_Form_Handler {
 			if ( ! is_wp_error( $submission_id ) ) {
 				update_post_meta( $submission_id, 'ccf_submission_data', $submission );
 
+				/**
+				 * @since 6.6
+				 */
+				update_post_meta( $submission_id, 'ccf_submission_data_map', $field_slug_to_id );
+
+				update_post_meta( $submission_id, 'ccf_submission_ip', sanitize_text_field( $_SERVER['REMOTE_ADDR'] ) );
+
 				foreach ( $file_ids as $file_id ) {
 					wp_update_post( array(
 						'ID' => $file_id,
 						'post_parent' => $submission_id,
 					) );
 				}
+
+				do_action( 'ccf_successful_submission', $submission_id, $form_id );
 			} else {
+				do_action( 'ccf_unsuccessful_submission', $form_id );
+
 				return array( 'error' => 'could_not_create_submission', 'success' => false, );
 			}
 
@@ -689,7 +700,7 @@ class CCF_Form_Handler {
 					ob_start();
 
 					foreach ( $submission as $slug => $field ) {
-						$field_id = $field_slug_to_id[$slug];
+						$field_id = $field_slug_to_id[$slug]['id'];
 						$label = get_post_meta( $field_id, 'ccf_field_label', true );
 						$type = get_post_meta( $field_id, 'ccf_field_type', true );
 
@@ -700,7 +711,7 @@ class CCF_Form_Handler {
 
 						<div>
 							<?php if ( ! empty( $label ) ) : ?>
-								<b><?php echo esc_html( $label ); ?> (<?php echo esc_html( $slug ); ?>):</b>
+								<b><?php echo esc_html( $label ); ?> <?php if ( apply_filters( 'ccf_show_slug_in_submission_email', false, $submission_id, $form_id ) ) : ?>(<?php echo esc_html( $slug ); ?>)<?php endif; ?>:</b>
 							<?php else : ?>
 								<b><?php echo esc_html( $slug ); ?>:</b>
 							<?php endif; ?>
@@ -760,7 +771,7 @@ class CCF_Form_Handler {
 							<?php endif; ?>
 						</div>
 
-						<?php
+					<?php
 					}
 
 					$form_page = null;
@@ -771,6 +782,15 @@ class CCF_Form_Handler {
 							<?php esc_html_e( 'Form submitted from', 'custom-contact-forms' ); ?>:
 							<?php echo esc_url( $_POST['form_page'] ); ?>
 						</div>
+					<?php
+					}
+
+					if ( apply_filters( 'ccf_show_ip_in_submission_email', true, $submission_id, $form_id ) ) {
+						?>
+						<div>
+							<?php esc_html_e( 'Form submitter IP', 'custom-contact-forms' ); ?>:
+							<?php echo esc_html( $_SERVER['REMOTE_ADDR'] ); ?>
+						</div>
 						<?php
 					}
 
@@ -780,29 +800,54 @@ class CCF_Form_Handler {
 
 					$email_notification_from_type = get_post_meta( $form_id, 'ccf_form_email_notification_from_type', true );
 
-					if ( 'custom' === $email_notification_from_type ) {
-						$custom_email = get_post_meta( $form_id, 'ccf_form_email_notification_from_address', true );
+					$email_notification_from_name_type = get_post_meta( $form_id, 'ccf_form_email_notification_from_name_type', true );
+					$email_notification_from_name = get_post_meta( $form_id, 'ccf_form_email_notification_from_name', true );
+					
+					$name = null;
+					$email = null;
 
-						if ( ! empty( $custom_email ) ) {
-							$headers[] = 'From: ' . sanitize_email( $custom_email );
-							$headers[] = 'Reply-To: ' . sanitize_email( $custom_email );
+					if ( 'custom' === $email_notification_from_type ) {
+						$name = $email_notification_from_name;
+					} else {
+						$name_field = get_post_meta( $form_id, 'ccf_form_email_notification_from_name_field', true );
+					
+						if ( ! empty( $name_field ) && is_array( $submission[$name_field] ) ) {
+							if ( ! empty( $submission[$name_field]['first'] ) || ! empty( $submission[$name_field]['last'] ) ) {
+								$name = $submission[$name_field]['first'] . ' ' . $submission[$name_field]['last'];
+							}
 						}
+					}
+					
+					if ( 'custom' === $email_notification_from_type ) {
+						$email = get_post_meta( $form_id, 'ccf_form_email_notification_from_address', true );
 					} elseif ( 'field' === $email_notification_from_type ) {
 						$email_field = get_post_meta( $form_id, 'ccf_form_email_notification_from_field', true );
 
 						if ( ! empty( $email_field ) && ! empty( $submission[$email_field] ) ) {
 							if ( is_array( $submission[$email_field] ) && ! empty( $submission[$email_field]['confirm'] ) ) {
-								$headers[] = 'From: ' . sanitize_email( $submission[$email_field]['confirm'] );
-								$headers[] = 'Reply-To: ' . sanitize_email( $submission[$email_field]['confirm'] );
+								$email = $submission[$email_field]['confirm'];
 							} else {
-								$headers[] = 'From: ' . sanitize_email( $submission[$email_field] );
-								$headers[] = 'Reply-To: ' . sanitize_email( $submission[$email_field] );
+								$email = $submission[$email_field];
 							}
 						}
 					}
 
+					if ( ! empty( $name ) && ! empty( $email ) ) {
+						$headers[] = 'From: ' . sanitize_text_field( $name ) . ' <' . sanitize_email( $email ) . '>';
+						$headers[] = 'Reply-To: ' . sanitize_email( $email );
+					} elseif ( ! empty( $name ) && empty( $email ) ) {
+						$headers[] = 'From: ' . sanitize_text_field( $name );
+					} elseif ( empty( $name ) && ! empty( $email ) ) {
+						$headers[] = 'From: ' . sanitize_email( $email );
+						$headers[] = 'Reply-To: ' . sanitize_email( $email );
+					}
+
 					foreach ( $email_addresses as $email ) {
-						$subject = sprintf( __( '%s: Form Submission to "%s"', 'custom-contact-forms' ), esc_html( get_bloginfo( 'name' ) ), esc_html( get_the_title( $form_id ) ) );
+						$subject = sprintf( __( '%s: Form Submission', 'custom-contact-forms' ), wp_specialchars_decode( get_bloginfo( 'name' ) ) );
+						if ( ! empty( $form->post_title ) ) {
+							$subject .= sprintf( __( ' to "%s"', 'custom-contact-forms' ), wp_specialchars_decode( $form->post_title ) );
+						}
+
 						$subject = apply_filters( 'ccf_email_subject', $subject, $form_id, $email, $form_page );
 						wp_mail( $email, $subject, apply_filters( 'ccf_email_content', $message, $form_id, $email, $form_page ), apply_filters( 'ccf_email_headers', $headers, $form_id, $email, $form_page ) );
 					}

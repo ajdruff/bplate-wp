@@ -224,7 +224,9 @@ class WP_JSON_Server implements WP_JSON_ResponseHandler {
 		$this->headers        = $this->get_headers( $_SERVER );
 		$this->files          = $_FILES;
 
-		// Compatibility for clients that can't use PUT/PATCH/DELETE
+		/**
+		 * HTTP method override for clients that can't use PUT/PATCH/DELETE.
+		 */
 		if ( isset( $_GET['_method'] ) ) {
 			$this->method = strtoupper( $_GET['_method'] );
 		}

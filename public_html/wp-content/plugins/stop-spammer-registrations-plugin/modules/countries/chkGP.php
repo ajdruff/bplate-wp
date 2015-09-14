@@ -1,11 +1,12 @@
 <?php
-// generated Monday 16th of February 2015 07:13:11 PM
+// generated Saturday 11th of April 2015 04:12:20 PM
 if (!defined('ABSPATH')) exit;
 			
 class chkGP extends be_module {
 	public $searchname='Guadeloupe';
 	public $searchlist=array(
-	array('093121128000','093122000000')
+	array('093121128000','093122000000'),
+	array('107191208000','107191224000')
 	);
 }
 ?>

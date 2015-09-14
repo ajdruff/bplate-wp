@@ -3,8 +3,8 @@ Contributors: tlovett1
 Donate link: https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=HR34W94MM53RQ
 Tags: contact form, web form, custom contact form, custom forms, captcha form, contact fields, form mailers, forms
 Requires at least: 3.9
-Tested up to: 4.2
-Stable tag: 6.4.9
+Tested up to: 4.4
+Stable tag: 6.8.2
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -21,6 +21,8 @@ just contact forms.
 
 For detailed install and usage instructions, please visit [Github](http://github.com/tlovett1/custom-contact-forms).
 
+__Software integrity proudly assured by [Dockunit.io](https://dockunit.io).__
+
 == Installation ==
 
 Please refer to [Github](http://github.com/tlovett1/custom-contact-forms) for detailed installation instructions.
@@ -34,6 +36,67 @@ Please refer to [Github](http://github.com/tlovett1/custom-contact-forms) for de
 For questions, feature requests, and support concerning the Custom Contact Forms plugin, please refer to [Github](http://github.com/tlovett1/custom-contact-forms).
 
 == Changelog ==
+
+= 6.8.2 =
+* Fix non-translateable strings
+* Include French translation. Props [pyrog](https://github.com/pyrog)
+
+= 6.8.1 =
+* Tighten post type permissions so submissions and forms don't have archives and single views.
+
+= 6.8 =
+* Configurable "from" name field
+* Minor variable stomping bug fix
+* Successful/unsuccessful submission hooks
+
+= 6.7.3 =
+* Fix WP SEO conflict rooted in a rewrites bug
+
+= 6.7.2 =
+* Allow forms to be emptied
+* Allow MCE previews to be re-rendered
+* Fix spinner icon
+
+= 6.7.1 =
+* Fix MCE Previews that were broken in WP 4.2
+
+= 6.7.0 =
+* Ability to pause forms
+* Emulate Backbone HTTP via filter instead of API hack
+
+= 6.6.4 =
+* Fix API setup so it doesn't conflict with WP API plugin
+* Fix bug where export menu item was shown to non authorized users
+
+= 6.6.3 =
+* Fix form submission download bug
+
+= 6.6.2 =
+* Upgrade WP-API to 1.2.1
+
+= 6.6.1 =
+* Finally fix the bug where we can set our form title as empty
+
+= 6.6 =
+* Update WP-API to 1.2 (still have header method hack)
+* Form CSV download
+
+= 6.5.1 =
+* Fix translatable field strings.
+
+= 6.5 =
+* Add import/export functionality
+
+= 6.4.12 =
+* Improved draggable interactions
+
+= 6.4.11 =
+* Fix title special character formatting
+
+= 6.4.10 =
+* Only use GET and POST HTTP methods. Remove 505 error message modal text.
+* Add IP address to submission
+* Fix phone number validator bug
 
 = 6.4.9 =
 * Don't cache backend endpoints. A useful fix for W3 Total Cache users.

@@ -778,6 +778,7 @@
 				'blur input': 'save',
 				'change select': 'save',
 				'change select.form-completion-action-type': 'toggleCompletionFields',
+				'change select.form-pause': 'togglePauseFields',
 				'change select.form-send-email-notifications': 'toggleNotificationFields'
 			},
 
@@ -805,6 +806,18 @@
 				}
 			},
 
+			togglePauseFields: function() {
+
+				var pause = this.el.querySelectorAll( '.form-pause' )[0].value;
+				var pauseMessage = this.el.querySelectorAll( '.pause-message' )[0];
+
+				if ( parseInt( pause ) ) {
+					pauseMessage.style.display = 'block';
+				} else {
+					pauseMessage.style.display = 'none';
+				}
+			},
+
 			save: function( $promise ) {
 				var SELF = this;
 
@@ -821,6 +834,12 @@
 
 				var buttonText = this.el.querySelectorAll( '.form-button-text' )[0].value;
 				this.model.set( 'buttonText', buttonText );
+
+				var pause = this.el.querySelectorAll( '.form-pause' )[0].value;
+				this.model.set( 'pause', ( parseInt( pause ) ) ? true : false );
+
+				var pauseMessage = this.el.querySelectorAll( '.form-pause-message' )[0].value;
+				this.model.set( 'pauseMessage', pauseMessage );
 
 				var completionMessage = this.el.querySelectorAll( '.form-completion-message' )[0].value;
 				this.model.set( 'completionMessage', completionMessage );
@@ -845,6 +864,8 @@
 
 				this.toggleCompletionFields();
 
+				this.togglePauseFields();
+
 				wp.ccf.dispatcher.on( 'saveFormSettings', this.save, this );
 				wp.ccf.dispatcher.on( 'mainViewChange', this.save, this );
 
@@ -861,7 +882,8 @@
 				'blur input': 'save',
 				'change select': 'save',
 				'change select.form-send-email-notifications': 'toggleNotificationFields',
-				'change select.form-email-notification-from-type': 'toggleNotificationFields'
+				'change select.form-email-notification-from-type': 'toggleNotificationFields',
+				'change select.form-email-notification-from-name-type': 'toggleNotificationFields'
 			},
 
 			initialize: function( options ) {
@@ -875,15 +897,21 @@
 				this.unbind();
 			},
 
-			updateFromAddressFieldField: function() {
+			updateFromFieldField: function() {
 				var emailNotificationFromField = this.el.querySelectorAll( '.form-email-notification-from-field' )[0];
 				emailNotificationFromField.innerHTML = '';
 				emailNotificationFromField.disabled = false;
 
-				var fields = this.model.get( 'fields'),
-					fieldsAdded = 0;
+				var emailNotificationFromNameField = this.el.querySelectorAll( '.form-email-notification-from-name-field' )[0];
+				emailNotificationFromNameField.innerHTML = '';
+				emailNotificationFromNameField.disabled = false;
 
-				var currentField = this.model.get( 'emailNotificationFromField' );
+				var fields = this.model.get( 'fields'),
+					addressFieldsAdded = 0,
+					nameFieldsAdded = 0;
+
+				var addressField = this.model.get( 'emailNotificationFromField' );
+				var nameField = this.model.get( 'emailNotificationFromNameField' );
 
 				if ( fields.length >= 1 ) {
 					fields.each( function( field ) {
@@ -892,22 +920,41 @@
 							option.innerHTML = field.get( 'slug' );
 							option.value = field.get( 'slug' );
 
-							if ( field.get( 'slug' ) === currentField ) {
+							if ( field.get( 'slug' ) === addressField ) {
 								option.selected = true;
 							}
 
 							emailNotificationFromField.appendChild( option );
 
-							fieldsAdded++;
+							addressFieldsAdded++;
+						} else if ( 'name' === field.get( 'type' ) ) {
+							var option = document.createElement( 'option' );
+							option.innerHTML = field.get( 'slug' );
+							option.value = field.get( 'slug' );
+
+							if ( field.get( 'slug' ) === nameField ) {
+								option.selected = true;
+							}
+
+							emailNotificationFromNameField.appendChild( option );
+
+							nameFieldsAdded++;
 						}
 					});
 				}
 
-				if ( 0 === fieldsAdded ) {
+				if ( 0 === addressFieldsAdded ) {
 					var option = document.createElement( 'option' );
 					option.innerHTML = ccfSettings.noEmailFields;
 					emailNotificationFromField.appendChild( option );
 					emailNotificationFromField.disabled = true;
+				}
+
+				if ( 0 === nameFieldsAdded ) {
+					var option = document.createElement( 'option' );
+					option.innerHTML = ccfSettings.noNameFields;
+					emailNotificationFromNameField.appendChild( option );
+					emailNotificationFromNameField.disabled = true;
 				}
 			},
 
@@ -924,6 +971,12 @@
 
 				var emailNotificationFromType = this.el.querySelectorAll( '.form-email-notification-from-type' )[0];
 
+				var emailNotificationFromName = this.el.querySelectorAll( '.email-notification-from-name' )[0];
+
+				var emailNotificationFromNameField = this.el.querySelectorAll( '.email-notification-from-name-field' )[0];
+
+				var emailNotificationFromNameType = this.el.querySelectorAll( '.form-email-notification-from-name-type' )[0];
+
 				if ( parseInt( sendEmailNotifications ) ) {
 					for ( i = 0; i < emailNotificationSettings.length; i++ ) {
 						emailNotificationSettings[i].style.display = 'block';
@@ -937,6 +990,15 @@
 					} else if ( 'field' === emailNotificationFromType.value ) {
 						emailNotificationFromField.style.display = 'block';
 					}
+
+					emailNotificationFromName.style.display = 'none';
+					emailNotificationFromNameField.style.display = 'none';
+
+					if ( 'custom' === emailNotificationFromNameType.value ) {
+						emailNotificationFromName.style.display = 'block';
+					} else if ( 'field' === emailNotificationFromNameType.value ) {
+						emailNotificationFromNameField.style.display = 'block';
+					}
 				} else {
 					for ( i = 0; i < emailNotificationSettings.length; i++ ) {
 						emailNotificationSettings[i].style.display = 'none';
@@ -944,6 +1006,9 @@
 
 					emailNotificationFromAddress.style.display = 'none';
 					emailNotificationFromField.style.display = 'none';
+
+					emailNotificationFromName.style.display = 'none';
+					emailNotificationFromNameField.style.display = 'none';
 				}
 			},
 
@@ -970,6 +1035,15 @@
 				var emailNotificationFromField = this.el.querySelectorAll( '.form-email-notification-from-field' )[0].value;
 				this.model.set( 'emailNotificationFromField', emailNotificationFromField );
 
+				var emailNotificationFromNameType = this.el.querySelectorAll( '.form-email-notification-from-name-type' )[0].value;
+				this.model.set( 'emailNotificationFromNameType', emailNotificationFromNameType );
+
+				var emailNotificationFromName = this.el.querySelectorAll( '.form-email-notification-from-name' )[0].value;
+				this.model.set( 'emailNotificationFromName', emailNotificationFromName );
+
+				var emailNotificationFromNameField = this.el.querySelectorAll( '.form-email-notification-from-name-field' )[0].value;
+				this.model.set( 'emailNotificationFromNameField', emailNotificationFromNameField );
+
 				if ( typeof $promise !== 'undefined' && typeof $promise.promise !== 'undefined' ) {
 					$promise.resolve();
 				}
@@ -985,12 +1059,12 @@
 				this.el.innerHTML = this.template( context );
 
 				this.toggleNotificationFields();
-				this.updateFromAddressFieldField();
+				this.updateFromFieldField();
 
 				wp.ccf.dispatcher.on( 'saveFormNotifications', this.save, this );
 				wp.ccf.dispatcher.on( 'mainViewChange', this.save, this );
-				this.listenTo( fields, 'add', this.updateFromAddressFieldField, this );
-				this.listenTo( fields, 'remove', this.updateFromAddressFieldField, this );
+				this.listenTo( fields, 'add', this.updateFromFieldField, this );
+				this.listenTo( fields, 'remove', this.updateFromFieldField, this );
 
 				return this;
 			}
@@ -1104,10 +1178,6 @@
 						SELF.model.save( {}, { context: 'edit' }).error( function( jqXHR, textStatus, errorThrown ) {
 							var messageType = 'sync';
 
-							if ( parseInt( errorThrown.status ) === 501 || parseInt( errorThrown.status ) === 505 ) {
-								messageType = 'method';
-							}
-
 							wp.ccf.errorModal.render( messageType ).show();
 						}).done( function( response ) {
 							if (ccfSettings.single && ! ccfSettings.postId ) {
@@ -1194,25 +1264,26 @@
 					specialFields.appendChild( new wp.ccf.views.FieldRowPlaceholder( { type: type } ).render().el );
 				});
 
+				var fieldModels = SELF.model.get( 'fields' );
+				var formContent = SELF.el.querySelectorAll( '.form-content' )[0];
+				var $formContent = $( formContent );
+
 				$( SELF.el.querySelectorAll( '.left-sidebar' )[0].querySelectorAll( '.field' ) ).draggable( {
 					cursor: 'move',
+					distance: 2,
 					zIndex: 160001,
-					//opacity: 0.75,
 					scroll: false,
-					containment: '.ccf-form-pane',
+					containment: 'document',
 					appendTo: '.ccf-main-modal',
-					snap: true,
+					snap: false,
 					connectToSortable: '.form-content',
 					helper: function( event ) {
 						var $field = $( event.currentTarget );
 						var $helper = $( '<div class="field" data-field-type="' + $field.attr( 'data-field-type' ) + '"><h4>' + $field.find( '.label' ).html() + '</h4></div>' );
-						return $helper.css( { 'width': $field.width(), 'height': $field.height() } );
+						return $helper.css( { 'width': $formContent.width(), opacity: '.75', 'height': $field.height() } );
 					}
 
 				});
-
-				var fieldModels = SELF.model.get( 'fields' );
-				var formContent = SELF.el.querySelectorAll( '.form-content' )[0];
 
 				if ( fieldModels.length >= 1 ) {
 					formContent.innerHTML = '';
@@ -1225,7 +1296,9 @@
 
 				$( formContent ).sortable( {
 					axis: 'y',
+					distance: 2,
 					handle: 'h4',
+					placeholder: 'field-placeholder',
 					stop: function( event, $ui ) {
 						if ( ! $ui.item.hasClass( 'instantiated' ) ) {
 							var type = $ui.item.attr( 'data-field-type' );
@@ -1340,10 +1413,6 @@
 
 				fetch.error( function( jqXHR, textStatus, errorThrown ) {
 					var messageType = 'sync';
-
-					if ( parseInt( errorThrown.status ) === 501 || parseInt( errorThrown.status ) === 505 ) {
-						messageType = 'method';
-					}
 
 					wp.ccf.errorModal.render( messageType ).show();
 				});
@@ -1600,10 +1669,6 @@
 
 				fetch.error( function( jqXHR, textStatus, errorThrown ) {
 					var messageType = 'sync';
-
-					if ( parseInt( errorThrown.status ) === 501 || parseInt( errorThrown.status ) === 505 ) {
-						messageType = 'method';
-					}
 
 					wp.ccf.errorModal.render( messageType ).show();
 				});

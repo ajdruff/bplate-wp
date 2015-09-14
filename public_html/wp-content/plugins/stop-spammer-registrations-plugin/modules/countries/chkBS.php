@@ -1,11 +1,12 @@
 <?php
-// generated Monday 16th of February 2015 07:12:44 PM
+// generated Saturday 11th of April 2015 04:11:55 PM
 if (!defined('ABSPATH')) exit;
 			
 class chkBS extends be_module {
 	public $searchname='Bahamas';
 	public $searchlist=array(
-	array('024051064000','024051128000')
+	array('024051064000','024051128000'),
+	array('204236064000','204236128000')
 	);
 }
 ?>

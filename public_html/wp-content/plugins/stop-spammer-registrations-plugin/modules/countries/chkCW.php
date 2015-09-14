@@ -1,5 +1,5 @@
 <?php
-// generated Monday 16th of February 2015 07:12:54 PM
+// generated Saturday 11th of April 2015 04:12:05 PM
 if (!defined('ABSPATH')) exit;
 			
 class chkCW extends be_module {

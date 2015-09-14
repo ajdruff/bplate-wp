@@ -38,17 +38,18 @@ class CCF_Submission_CPT {
 	 */
 	public function setup_cpt() {
 		$args = array(
-			'labels' => false,
+			'label' => esc_html__( 'Form Submissions', 'custom-contact-forms' ),
 			'public' => true,
 			'exclude_from_search' => true,
 			'show_in_nav_menus' => false,
 			'show_ui' => false,
-			'publicly_queryable' => true,
+			'publicly_queryable' => false,
 			'query_var' => false,
 			'rewrite' => false,
 			'capability_type' => 'post',
 			'hierarchical' => false,
 			'supports' => false,
+			'has_archive' => false,
 		);
 
 		register_post_type( 'ccf_submission', $args );

@@ -38,11 +38,11 @@ class PrliLink
       $query = $wpdb->prepare( $query_str,
                                $values['url'],
                                $values['slug'],
-                               $values['name'],
+                               esc_html($values['name']),
                                $values['param_forwarding'],
                                $values['param_struct'],
                                $values['redirect_type'],
-                               $values['description'],
+                               esc_html($values['description']),
                                (int)isset($values['track_me']),
                                (int)isset($values['nofollow']),
                                (isset($values['group_id'])?(int)$values['group_id']:'NULL') );
@@ -83,11 +83,11 @@ class PrliLink
       $query = $wpdb->prepare( $query_str,
                                isset($values['url'])?$values['url']:'',
                                isset($values['slug'])?$values['slug']:'',
-                               isset($values['name'])?$values['name']:'',
+                               isset($values['name'])?esc_html($values['name']):'',
                                isset($values['param_forwarding'])?$values['param_forwarding']:'',
                                isset($values['param_struct'])?$values['param_struct']:'',
                                isset($values['redirect_type'])?$values['redirect_type']:'',
-                               isset($values['description'])?$values['description']:'',
+                               isset($values['description'])?esc_html($values['description']):'',
                                (int)isset($values['track_me']),
                                (int)isset($values['nofollow']),
                                (isset($values['group_id'])?(int)$values['group_id']:'NULL'),
@@ -540,3 +540,4 @@ class PrliLink
       return "javascript:location.href='{$site_url}/index.php?action=prli_bookmarklet&k={$prli_options->bookmarklet_auth}&target_url='+escape(location.href);";
     }
 }
+

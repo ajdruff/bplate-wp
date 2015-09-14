@@ -15,11 +15,33 @@ class CCF_Custom_Contact_Forms {
 	 * @since 6.0
 	 */
 	public function setup() {
-		add_action( 'plugins_loaded', array( $this, 'manually_load_api' ), 100 );
+		add_action( 'plugins_loaded', array( $this, 'manually_load_api' ), 1000 );
 		add_action( 'plugins_loaded', array( $this, 'load_textdomain' ) );
 		add_filter( 'plugin_action_links', array( $this, 'filter_plugin_action_links' ), 10, 2 );
 		add_action( 'admin_notices', array( $this, 'permalink_warning' ) );
+		add_action( 'registered_post_type', array( $this, 'make_post_types_public' ), 11, 2 );
 		add_action( 'admin_init', array( $this, 'flush_rewrites' ), 10000 );
+
+	}
+
+
+	/**
+	 * Trick API into thinking non publically queryable post types are queryable
+	 *
+	 * @param string $post_type
+	 * @param array $args
+	 * @since 6.8.1
+	 */
+	public function make_post_types_public( $post_type, $args ) {
+		global $wp_post_types;
+
+		$type = &$wp_post_types[ $post_type ];
+
+		$json_post_types = array( 'ccf_form', 'ccf_submission' );
+
+		if ( in_array( $post_type, $json_post_types ) ) {
+			$type->show_in_json = true;
+		}
 	}
 
 	/**
@@ -31,12 +53,15 @@ class CCF_Custom_Contact_Forms {
 		$flush_rewrites = get_option( 'ccf_flush_rewrites' );
 
 		if ( ! empty( $flush_rewrites ) ) {
-			flush_rewrite_rules();
+			add_action( 'shutdown', 'flush_rewrite_rules' );
 
 			delete_option( 'ccf_flush_rewrites' );
 		}
 	}
 
+	/**
+	 * Output permalink warning
+	 */
 	public function permalink_warning() {
 		$permalink_structure = get_option( 'permalink_structure' );
 
@@ -45,7 +70,7 @@ class CCF_Custom_Contact_Forms {
 			<div class="update-nag">
 				<?php printf( __( 'Custom Contact Forms will not work unless pretty permalinks (not default) are enabled. Please update your <a href="%s">permalinks settings</a>.', 'custom-contact-forms' ), esc_url( admin_url( 'options-permalink.php' ) ) ); ?>
 			</div>
-			<?php
+		<?php
 		}
 	}
 
@@ -85,13 +110,33 @@ class CCF_Custom_Contact_Forms {
 	 * @since 6.0
 	 */
 	public function manually_load_api() {
-		if ( ! class_exists( 'WP_JSON_Server' ) ) {
-			add_filter( 'json_url', 'set_url_scheme' );
+		global $pagenow;
 
-			require( dirname( __FILE__ ) . '/../vendor/wp-api/wp-api/plugin.php' );
+		add_action( 'wp_json_server_before_serve', array( $this, 'api_init' ) );
+		add_filter( 'json_url', 'set_url_scheme' );
 
-			add_action( 'wp_json_server_before_serve', array( $this, 'api_init' ) );
+		if ( ! empty( $pagenow ) ) {
+			if ( 'plugins.php' === $pagenow && ( ! empty( $_GET['action'] ) && 'activate' === $_GET['action'] || ! empty( $_POST['checked'] ) ) ) {
+
+				if ( ! empty( $_POST['checked'] ) ) {
+					foreach ( $_POST['checked'] as $plugin ) {
+						if ( preg_match( '#json-rest-api#i', $plugin ) ) {
+							return;
+						}
+					}
+				} elseif ( ! empty( $_GET['plugin'] ) ) {
+					if ( preg_match( '#json-rest-api#i', $_GET['plugin'] ) ) {
+						return;
+					}
+				}
+			}
 		}
+
+		if ( function_exists( 'json_api_init' ) ) {
+			return;
+		}
+
+		require_once( dirname( __FILE__ ) . '/../vendor/wp-api/wp-api/plugin.php' );
 	}
 
 	/**

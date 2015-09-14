@@ -1,9 +1,9 @@
 <?PHP
 /*
-Plugin Name: Stop Spammers
+Plugin Name: Stop Spammers Spam Control
 Plugin URI: http://wordpress.org/plugins/stop-spammer-registrations-plugin/
-Description: The Stop Spammer Registrations Plugin effectively detects malicious events to to prevent spammers from registering or making comments.
-Version: 6.05
+Description: The Stop Spammers Plugin blocks spammers from leaving comments or logging in. Protects sites from robot registrations and malicious attacks.
+Version: 6.12
 Author: Keith P. Graham
 
 This software is distributed in the hope that it will be useful,
@@ -12,7 +12,7 @@ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 */
 // networking requires a couple of globals
 
-define('KPG_SS_VERSION', '6.05');
+define('KPG_SS_VERSION', '6.12');
 define( 'KPG_SS_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 define( 'KPG_SS_PLUGIN_FILE', plugin_dir_path( __FILE__ ) );
 
@@ -58,14 +58,30 @@ How it works:
 10 on captcha success add to good cache, remove from bad cache, update counters, log success.
 
 */
-//if (empty($_POST)) echo "in plugin and post is empty<br><br>";
 
 function kpg_ss_init() {
 	remove_action('init','kpg_ss_init'); 
+	// incompatible with a jetpack submit
+	if ($_POST!=null&&array_key_exists('jetpack_protect_num',$_POST)) return;
+	// emember trying to log in - disable plugin for emember logins.
+	if (function_exists('wp_emember_is_member_logged_in')) { 
+		// only emember function I could find after 30 econds of googling.
+		if (!empty($_POST)&&array_key_exists('login_pwd',$_POST)) return;
+	}
+
 	// set up the akismet hit
 	add_action('akismet_spam_caught','kpg_ss_log_akismet'); //hook akismet spam
 	$muswitch='N';
-	
+	// fcheck to see if this is an opencpatcha image request - we need this to get the image
+	if ($_GET!=null&&array_key_exists('ocimg',$_GET)) {
+		// returns the image
+		$s=$_GET['ocimg'];
+		header('Content-Type: image/jpeg');
+		$response=wp_remote_get('http://www.opencaptcha.com/img/'.$s);
+		echo wp_remote_retrieve_body($response);
+		exit();
+	}
+
 	if (function_exists('is_multisite') && is_multisite()) {
 		$muswitch='Y';
 		// check the muswitch option
@@ -85,7 +101,8 @@ function kpg_ss_init() {
 	} else {
 		define('KPG_SS_MU', $muswitch);
 	}
-	// now, if it is not mu
+	
+
 	if (function_exists('is_user_logged_in')) { 
 		// check to see if we need to hook the settings
 		// load the settings if logged in
@@ -103,6 +120,11 @@ function kpg_ss_init() {
 		add_action('user_register', 'kpg_new_user_ip');
 		add_action('wp_login', 'kpg_log_user_ip', 10, 2);
 	}
+	// don't do anything else if the emember is logged in
+	if (function_exists('wp_emember_is_member_logged_in')) { 
+		if (wp_emember_is_member_logged_in()) return;
+	}
+
 	if (isset($_POST) && !empty($_POST)) {
 		// see if we are returning from a deny
 		if (array_key_exists('kpg_deny',$_POST)&&array_key_exists('kn',$_POST )) {
@@ -125,8 +147,14 @@ function kpg_ss_init() {
 		// don' check if ip is google, etc
 		// check to see if we are doing a post with values
 		$post=get_post_variables();
-		if (!empty($post['email']) || !empty($post['author'])) { // must be a login or a comment which require minimum stuff 
-			if(kpg_ss_check_white()!==false) return;	
+		if (!empty($post['email']) || !empty($post['author'])|| !empty($post['comment'])) { // must be a login or a comment which require minimum stuff 
+			//sfs_debug_msg('email or author '.print_r($post,true));
+			$reason=kpg_ss_check_white();
+			if($reason!==false) {
+				//sfs_debug_msg("return from white $reason");
+				return;	
+			}
+			//sfs_debug_msg('past white ');
 			kpg_ss_check_post(); // on POST check if we need to stop comments or logins
 		} else {
 			//sfs_debug_msg('no email or author '.print_r($post,true));
@@ -148,7 +176,7 @@ function kpg_ss_init() {
 					$reason=be_load($add,kpg_get_ip(),$stats,$options);
 					if ($reason!==false) {
 						// need to log a passed hit on post here.
-						kpg_ss_log_bad($ip,$reason,$add[1],$add);					
+						kpg_ss_log_bad(kpg_get_ip(),$reason,$add[1],$add);					
 						return;
 					}
 				}
@@ -286,6 +314,10 @@ function kpg_ss_log_akismet() {
 	$options=kpg_ss_get_options();
 	$stats=kpg_ss_get_stats();
 	if ($options['chkakismet']!='Y') return false;
+	// check white lists first
+	$reason=kpg_ss_check_white();
+	if ($reason!==false) return;
+	// not on allow lists
 	$post=get_post_variables();
 	$post['reason']='from Akismet';
 	$post['chk']='chkakismet';
@@ -374,6 +406,7 @@ function be_load($file,$ip,&$stats=array(),&$options=array(),&$post=array()) {
 	}
 	require_once($fd);
 	// this loads a be_module class
+	//sfs_debug_msg("loading $fd");
 	$class=new $file();
 	$result=$class->process($ip,$stats,$options,$post);
 	$class=null;
@@ -400,14 +433,47 @@ function get_post_variables() {
 		return $ansa;
 	}
 	$search=array(
-	'email'=>array('email','input_','address'),
-	'author'=>array('author','log','_id','user','signup_for','name'),
+	'email'=>array('email','address'), // 'input_' = woo forms
+	'author'=>array('author','log','user','signup_for','name','_id'),
 	'pwd'=>array('psw','pwd','pass','secret'),
 	'comment'=>array('comment','message','body','excerpt'),
 	'subject'=>array('subj','topic'),
 	'url'=>array('url','blog_name','blogname')
 	);
 	$emfound=false;
+	// rewrite this
+	foreach ($search as $var=>$sa) {
+		foreach ($sa as $srch) {
+			foreach($p as $pkey=>$pval) {
+				// see if the things in $srch live in post
+				if (stripos($pkey,$srch)!==false) {
+					// got a hit
+					if (is_array($pval)) $pval=print_r($pval,true);
+					$ansa[$var]=$pval;
+					break;
+				}
+			}
+			if (!empty($ansa[$var])) break;
+		}
+		if (empty($ansa[$var]) && $var=='email' ) {  // empty email
+			// did not get a hit so we need to try again and look for something that looks like an email
+ 			foreach($p as $pkey=>$pval) {
+				if (stripos($pkey,'input_')) {
+					// might have an email
+					if (is_array($pval)) $pval=print_r($pval,true);
+					if(strpos($pval,'@')!==false&&strrpos($pval,'.')>strpos($pval,'@')) {
+						// close enough
+						$ansa[$var]=$pval;
+						break;
+					}
+				}
+			}
+		} 
+	}
+	
+	
+/*	
+	
 	foreach ($search as $var=>$sa) {
 		foreach ($sa as $srch) {
 			foreach($p as $pkey=>$pval) {
@@ -426,10 +492,11 @@ function get_post_variables() {
 			}
 		}
 	}
+	*/
 	// sanitize input - some of this is stored in history and needs to be cleaned up
 	foreach($ansa as $key=>$value) {
 		// clean the variables even more
-		$ansa[$key]=really_clean(sanitize_text_field($value)); // really clean gets rid of high value characters
+		$ansa[$key]=sanitize_text_field($value); // really clean gets rid of high value characters
 	}
 	if (strlen($ansa['email'])>80) $ansa['email']=substr($ansa['email'],0,77).'...';
 	if (strlen($ansa['author'])>80) $ansa['author']=substr($ansa['author'],0,77).'...';

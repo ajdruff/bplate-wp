@@ -20,7 +20,7 @@ $now=date('Y/m/d H:i:s',time() + ( get_option( 'gmt_offset' ) * 3600 ));
 //}
 
 $ip=kpg_get_ip();
-
+$hip=$_SERVER['SERVER_ADDR'];
 $email='';
 $author='';
 $subject='';
@@ -42,12 +42,12 @@ $nonce=wp_create_nonce('kpgstopspam_update');
 <input type="hidden" name="kpg_stop_spammers_control" value="<?php echo $nonce;?>" />
 <fieldset style="border:thin solid black;padding:6px;width:100%;">
 <legend><span style="font-weight:bold;font-size:1.2em" >Option Testing</span></legend>
-IP address: <input name="ip" type="text" value="<?php echo $ip; ?>"><br>
+IP address: <input name="ip" type="text" value="<?php echo $ip; ?>"> (Your Server address is <?php echo $hip;?>)<br>
 Email: <input name="email" type="text" value="<?php echo $email; ?>"><br>
 Author/User: <input name="author" type="text" value="<?php echo $author; ?>"><br>
 Subject: <input name="subject" type="text" value="<?php echo $subject; ?>"><br>
 Comment: <textarea name="body"><?php echo $body; ?></textarea><br>
-</form>
+
 <div style="width:50%;float:left;">
 <p class="submit"><input name="testopt" class="button-primary" value="Test Options" type="submit" /></p>
 </div>
@@ -73,6 +73,7 @@ if (!empty($nonce) && wp_verify_nonce($nonce,'kpgstopspam_update')) {
 		'chkscripts',
 		'chkvalidip',
 		'chkwlem',
+		'chkwluserid',
 		'chkwlist',
 		'chkyahoomerchant'
 		);
@@ -96,6 +97,7 @@ if (!empty($nonce) && wp_verify_nonce($nonce,'kpgstopspam_update')) {
 		'chkbbcode',
 		'chkbcache',
 		'chkblem',
+		'chkbluserid',
 		'chkblip',
 		'chkbotscout',
 		'chkdisp',
@@ -147,15 +149,16 @@ if (!empty($nonce) && wp_verify_nonce($nonce,'kpgstopspam_update')) {
 		
 	}
 	if (array_key_exists('testcountry',$_POST)) {
-		$optionlist=array('chkafrica','chkAD','chkAE','chkAF','chkAL','chkAM','chkAR','chkAT','chkAU','chkAX',
-		'chkAZ','chkBA','chkBB','chkBD','chkBE','chkBF','chkBG','chkBH','chkBN','chkBO','chkBR','chkBS','chkBY',
-		'chkBZ','chkCA','chkCD','chkCH','chkCL','chkCN','chkCO','chkCR','chkCU','chkCW','chkCY','chkCZ','chkDE','chkDK','chkDO','chkDZ','chkEC','chkEE','chkES','chkEU','chkFI','chkFJ','chkFR','chkGB','chkGE','chkGF',
-		'chkGI','chkGP','chkGR','chkGT','chkGU','chkGY','chkHK','chkHN','chkHR','chkHT','chkHU','chkID','chkIE','chkIL','chkIN','chkIQ','chkIR','chkIS','chkIT','chkJM','chkJO','chkJP','chkKG','chkKH','chkKR','chkKW',
-		'chkKY','chkKZ','chkLA','chkLB','chkLK','chkLT','chkLU','chkLV','chkMA','chkMD','chkME','chkMK','chkMM',
-		'chkMN','chkMO','chkMP','chkMQ','chkMT','chkMV','chkMX','chkMY','chkNC','chkNI','chkNL','chkNO','chkNP',
-		'chkNZ','chkOM','chkPA','chkPE','chkPG','chkPH','chkPK','chkPL','chkPR','chkPS','chkPT','chkPW','chkPY','chkQA','chkRO','chkRS','chkRU','chkSA','chkSE','chkSG','chkSI','chkSK','chkSV','chkSX','chkSY','chkTH',
-		'chkTJ','chkTM','chkTR','chkTT','chkTW','chkUA','chkUK','chkUS','chkUY','chkUZ','chkVC','chkVE','chkVN',
-		'chkYE','chkZA');
+		$optionlist=array(
+'chkAD','chkAE','chkAF','chkAL','chkAM','chkAR','chkAT','chkAU','chkAX','chkAZ','chkBA','chkBB','chkBD','chkBE','chkBG','chkBH','chkBN','chkBO','chkBR','chkBS','chkBY','chkBZ','chkCA','chkCD','chkCH','chkCL','chkCN','chkCO','chkCR','chkCU','chkCW','chkCY','chkCZ','chkDE','chkDK','chkDO','chkDZ','chkEC','chkEE','chkES','chkEU','chkFI','chkFJ','chkFR','chkGB','chkGE','chkGF','chkGI','chkGP','chkGR','chkGT','chkGU','chkGY','chkHK','chkHN','chkHR','chkHT','chkHU','chkID','chkIE','chkIL','chkIN','chkIQ','chkIR','chkIS','chkIT','chkJM','chkJO','chkJP','chkKE','chkKG','chkKH','chkKR','chkKW','chkKY','chkKZ','chkLA','chkLB','chkLK','chkLT','chkLU','chkLV','chkMD','chkME','chkMK','chkMM','chkMN','chkMO','chkMP','chkMQ','chkMT','chkMV','chkMX','chkMY','chkNC','chkNI','chkNL','chkNO','chkNP','chkNZ','chkOM','chkPA','chkPE','chkPG','chkPH','chkPK','chkPL','chkPR','chkPS','chkPT','chkPW','chkPY','chkQA','chkRO','chkRS','chkRU','chkSA','chkSC','chkSE','chkSG','chkSI','chkSK','chkSV','chkSX','chkSY','chkTH','chkTJ','chkTM','chkTR','chkTT','chkTW','chkUA','chkUK','chkUS','chkUY','chkUZ','chkVC','chkVE','chkVN','chkYE'
+		
+		
+		);
+		
+		//KE - Kenya
+		//chkMA missing
+		//SC - Seychelles
+		
 		$m1=memory_get_usage(true);
 		$m2=memory_get_peak_usage(true);
 		echo "<br>Memory used, peak: $m1, $m2<br>";
@@ -233,7 +236,7 @@ if (!empty($nonce) && wp_verify_nonce($nonce,'kpgstopspam_update')) {
 
 
 
-
+</form>
 <?php
 // if there is a log file we can display it here
 $dfile=KPG_SS_PLUGIN_FILE.'includes/.sfs_debug_output.txt';
@@ -310,7 +313,7 @@ $nonce=wp_create_nonce('kpgstopspam_update');
 	$ini=@ini_get('disable_functions');
 	if (!empty($ini)) {
 		$disabled = explode(',',$ini);
-		if (isArray($disabled) && in_array('phpinfo', $disabled)) {
+		if (is_array($disabled) && in_array('phpinfo', $disabled)) {
 			$pinf=false;
 		}
 	} 

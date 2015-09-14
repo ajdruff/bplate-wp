@@ -65,8 +65,6 @@ class CCF_Form_Manager {
 					<p>
 						<# if ( 'sync' === messageType ) { #>
 							<?php printf( __( 'There is an issue with synchronizing data. Please try deactivating all other plugins and activating the TwentyFifteen theme. If this fixes the problem, you have a plugin or theme conflict. If it does not, please post in the <a href="%s">support forums</a> or <a href="%s">Github</a>.', 'custom-contact-forms' ), 'https://wordpress.org/support/plugin/custom-contact-forms', 'http://github.com/tlovett1/custom-contact-forms' ); ?>
-						<# } else if ( 'method' === messageType ) { #>
-							<?php printf( __( 'Your web server does not support either PUT, PATCH, or DELETE HTTP methods. Please contact your host to resolve the issue.', 'custom-contact-forms' ), 'https://wordpress.org/support/plugin/custom-contact-forms', 'http://github.com/tlovett1/custom-contact-forms' ); ?>
 						<# } #>
 					</p>
 				</div>
@@ -92,9 +90,9 @@ class CCF_Form_Manager {
 
 		<script type="text/html" id="ccf-field-row-template">
 			<h4>
-				<div class="right">
+				<span class="right">
 					<a aria-hidden="true" data-icon="&#xe602;" class="delete"></a>
-				</div>
+				</span>
 				<span class="label">{{ label }}</span>
 			</h4>
 
@@ -126,10 +124,7 @@ class CCF_Form_Manager {
 				<div class="accordion-section ccf-form-notifications"></div>
 			</div>
 
-			<div class="form-content">
-				<!--<div class="no-fields">
-					<?php esc_html_e( '&rarr; Drag fields here to add them', 'custom-contact-forms' ); ?>
-				</div>-->
+			<div class="form-content" data-drag-message="<?php esc_html_e( '&larr; Drag fields from the left here.', 'custom-contact-forms' ); ?>">
 			</div>
 
 			<div class="right-sidebar ccf-field-sidebar accordion-container"></div>
@@ -175,6 +170,18 @@ class CCF_Form_Manager {
 					<label for="ccf_form_completion_message"><?php esc_html_e( 'Completion Message:', 'custom-contact-forms' ); ?></label>
 					<textarea class="widefat form-completion-message" id="ccf_form_completion_message" name="completion-message">{{ form.completionMessage }}</textarea>
 				</p>
+				<p>
+					<label for="ccf_form_pause"><?php esc_html_e( 'Pause form:', 'custom-contact-forms' ); ?></label>
+
+					<select name="form_pause" class="form-pause" id="ccf_form_pause">
+						<option value="0"><?php esc_html_e( 'No', 'custom-contact-forms' ); ?></option>
+						<option value="1" <# if ( form.pause ) { #>selected<# } #>><?php esc_html_e( 'Yes', 'custom-contact-forms' ); ?></option>
+					</select>
+				</p>
+				<p class="pause-message">
+					<label for="ccf_form_pause_message"><?php esc_html_e( 'Pause Message:', 'custom-contact-forms' ); ?></label>
+					<textarea class="widefat form-pause-message" id="ccf_form_pause_message" name="pause-message">{{ form.pauseMessage }}</textarea>
+				</p>
 			</div>
 		</script>
 
@@ -214,6 +221,27 @@ class CCF_Form_Manager {
 				<p class="email-notification-from-field">
 					<label for="ccf_form_email_notification_from_field"><?php esc_html_e( 'Pull "From" Email Dynamically from Field:', 'custom-contact-forms' ); ?></label>
 					<select name="email_notification_from_field" class="form-email-notification-from-field" id="ccf_form_email_notification_from_field">
+					</select>
+				</p>
+
+				<p class="email-notification-setting">
+					<label for="ccf_form_email_notification_from_name_type"><?php esc_html_e( '"From" Name Type:', 'custom-contact-forms' ); ?></label>
+					<select name="email_notification_from_name_type" class="form-email-notification-from-name-type" id="ccf_form_email_notification_from_name_type">
+						<option value="custom"><?php esc_html_e( 'Custom Name', 'custom-contact-forms' ); ?></option>
+						<option value="field" <# if ( 'field' === form.emailNotificationFromNameType ) { #>selected<# } #>><?php esc_html_e( 'Form Field', 'custom-contact-forms' ); ?></option>
+					</select>
+
+					<span class="explain"><?php esc_html_e( 'You can set the notification emails from name to be a custom name or pull the name from a field in the form.', 'custom-contact-forms' ); ?></span>
+				</p>
+
+				<p class="email-notification-from-name">
+					<label for="ccf_form_email_notification_from_name"><?php esc_html_e( 'Custom "From" Name:', 'custom-contact-forms' ); ?></label>
+					<input class="widefat form-email-notification-from-name" id="ccf_form_email_notification_from_name" name="email-notification-from-name" value="{{ form.emailNotificationFromName }}">
+				</p>
+
+				<p class="email-notification-from-name-field">
+					<label for="ccf_form_email_notification_from_name_field"><?php esc_html_e( 'Pull "From" Name Dynamically from Field:', 'custom-contact-forms' ); ?></label>
+					<select name="email_notification_from_name_field" class="form-email-notification-from-name-field" id="ccf_form_email_notification_from_name_field">
 					</select>
 				</p>
 			</div>
@@ -721,7 +749,7 @@ class CCF_Form_Manager {
 						<label for="ccf-field-address-type"><?php esc_html_e( 'Type:', 'custom-contact-forms' ); ?></label>
 						<select id="ccf-field-address-type" class="field-address-type">
 							<option value="us"><?php esc_html_e( 'United States', 'custom-contact-forms' ); ?></option>
-							<option value="international" <# if ( 'international' === field.format ) { #>selected="selected"<# } #>><?php esc_html_e( 'International', 'custom-contact-forms' ); ?></option>
+							<option value="international" <# if ( 'international' === field.addressType ) { #>selected="selected"<# } #>><?php esc_html_e( 'International', 'custom-contact-forms' ); ?></option>
 						</select>
 					</div>
 					<div>
@@ -1404,6 +1432,12 @@ class CCF_Form_Manager {
 								<# } #>
 							</div>
 						<# } #>
+						<div class="field-slug">
+							<?php esc_html_e( 'IP Address', 'custom-contact-forms' ); ?>
+						</div>
+						<div class="field-content">
+							{{ submission.ip_address }}
+						</div>
 					</div>
 				</div>
 			</td>
@@ -1493,6 +1527,7 @@ class CCF_Form_Manager {
 			wp_enqueue_script( 'ccf-form-manager', plugins_url( $js_manager_path, dirname( __FILE__ ) ), array( 'json2', 'jquery', 'jquery-ui-core', 'jquery-ui-datepicker', 'underscore', 'backbone', 'jquery-ui-core', 'jquery-ui-draggable', 'jquery-ui-sortable', 'jquery-ui-droppable', 'wp-api', 'moment' ), '1.0', true );
 			wp_localize_script( 'ccf-form-manager', 'ccfSettings', array(
 				'nonce' => wp_create_nonce( 'ccf_nonce' ),
+				'downloadSubmissionsNonce' => wp_create_nonce( 'ccf_download_submissions_nonce' ),
 				'adminUrl' => esc_url_raw( admin_url() ),
 				'fieldLabels' => $field_labels,
 				'gmtOffset' => get_option( 'gmt_offset' ),
@@ -1504,9 +1539,12 @@ class CCF_Form_Manager {
 				'specialFieldLabels' => $special_field_labels,
 				'maxFileSize' => floor( wp_max_upload_size() / 1000 / 1000 ),
 				'noEmailFields' => esc_html__( 'You have no email fields', 'custom-contact-forms' ),
+				'noNameFields' => esc_html__( 'You have no name fields', 'custom-contact-forms' ),
 				'invalidDate' => esc_html__( 'Invalid date', 'custom-contact-forms' ),
 				'allLabels' => array_merge( $field_labels, $structure_field_labels, $special_field_labels ),
+				'fieldLabel' => esc_html__( 'Field Label', 'custom-contact-forms' ),
 				'thickboxTitle' => esc_html__( 'Form Submission', 'custom-contact-forms' ),
+				'pauseMessage' => esc_html__( 'This form is paused right now. Check back later!', 'custom-contact-forms' ),
 				'skipFields' => apply_filters( 'ccf_no_submission_display_fields', array( 'html', 'section-header', 'recaptcha' ) ),
 			) );
 
