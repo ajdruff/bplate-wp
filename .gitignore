@@ -1,3 +1,4 @@
-/public_html/php_errors.log
+wp-config-db.php
+.htpasswd
 /public_html/wp-content/plugins/apergy-sandbox
 *.log
