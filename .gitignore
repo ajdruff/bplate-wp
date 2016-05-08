@@ -2,3 +2,5 @@ wp-config-db.php
 .htpasswd
 /public_html/wp-content/plugins/apergy-sandbox
 *.log
+_live
+_stage
