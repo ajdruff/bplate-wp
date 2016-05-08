@@ -10,8 +10,9 @@ The differences from the standard WordPress installation include:
 
 * separating the configuration files into a directory above the web root. 
 * includes separate folders for dev, live, and staging configuration. 
-* removal of all plugins (hello dolly) and comments
-* allows creation of separate branches to include custom plugin distributions
+* removal of all plugins (hello dolly)
+* custom default installation options (limited widgets, no Hello World post, no sample page, and the forcing of pretty links (permalinks).
+* allows creation of separate git branches to include custom plugin distributions
 
 
 
@@ -87,6 +88,20 @@ Although plugins are not included in the `master` branch distribution, you can c
 
 
 Theme distributions work the same way. You can replace the default themes with any of the themes located in the various theme branches.
+
+
+#Faqs
+
+
+
+##How do I modify whether a post gets created, which widgets are installed or which WordPress options are selected on installation?
+
+
+Edit the file wp-content/install.php to modify the default installation options.
+
+This file is run by WordPress on initial installation and upgrade instead of creating its normaly default posts (Hello World) for example.
+
+
 
 #Contributors
 
